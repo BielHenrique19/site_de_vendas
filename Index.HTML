@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Loja | Ofertas Especiais</title>
+    <style>
+        /* Estilos Gerais */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f4f9; color: #333; line-height: 1.6; }
+        
+        /* Cabeçalho */
+        header { background-color: #111827; color: #fff; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.5rem; letter-spacing: 1px; }
+        .cart-btn { background-color: #2563eb; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .cart-btn:hover { background-color: #1d4ed8; }
+
+        /* Banner Principal */
+        .hero { background: linear-gradient(135deg, #2563eb, #1e40af); color: white; text-align: center; padding: 3rem 1rem; margin-bottom: 2rem; }
+        .hero h2 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+
+        /* Grade de Produtos */
+        .container { max-width: 1100px; margin: auto; padding: 0 1rem; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+        .product-card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; transition: transform 0.2s; }
+        .product-card:hover { transform: translateY(-5px); }
+        .product-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 5px; margin-bottom: 1rem; }
+        .product-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .price { font-size: 1.3rem; font-weight: bold; color: #16a34a; margin-bottom: 1rem; }
+        .add-btn { background-color: #111827; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1rem; }
+        .add-btn:hover { background-color: #374151; }
+
+        /* Modal do Carrinho */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 200; }
+        .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+        .remove-btn { color: #dc2626; background: none; border: none; cursor: pointer; font-size: 0.9rem; }
+        .cart-total { font-size: 1.3rem; font-weight: bold; text-align: right; margin: 1.5rem 0; }
+        .checkout-btn { background-color: #16a34a; color: white; border: none; padding: 0.8rem; width: 100%; border-radius: 5px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .checkout-btn:hover { background-color: #15803d; }
+
+        /* Rodapé */
+        footer { text-align: center; padding: 2rem; background: #111827; color: #9ca3af; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Minha Loja</h1>
+        <button class="cart-btn" onclick="toggleCart()">🛒 Carrinho (<span id="cart-count">0</span>)</button>
+    </header>
+
+    <section class="hero">
+        <h2>Os Melhores Produtos com Entrega Rápida</h2>
+        <p>Escolha seus itens abaixo e finalize seu pedido direto pelo WhatsApp!</p>
+    </section>
+
+    <main class="container">
+        <div class="products-grid" id="products-list">
+            <!-- Os produtos são carregados via JavaScript abaixo -->
+        </div>
+    </main>
+
+    <!-- Janela do Carrinho -->
+    <div class="modal" id="cart-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Seu Carrinho</h2>
+                <button class="close-btn" onclick="toggleCart()">&times;</button>
+            </div>
+            <div id="cart-items"></div>
+            <div class="cart-total">Total: R$ <span id="cart-total">0,00</span></div>
+            <button class="checkout-btn" onclick="checkoutWhatsApp()">Finalizar Pedido no WhatsApp</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Minha Loja. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // 1. CONFIGURE SEU NÚMERO DE WHATSAPP AQUI (Apenas números, com DDI e DDD)
+        const WHATSAPP_NUMBER = "5543999999999"; 
+
+        // 2. CADASTRE SEUS PRODUTOS AQUI
+        const products = [
+            { id: 1, name: "Fone Bluetooth Pro", price: 149.90, img: "https://unsplash.com" },
+            { id: 2, name: "Smartwatch Esportivo", price: 229.00, img: "https://unsplash.com" },
+            { id: 3, name: "Mochila Impermeável", price: 119.50, img: "https://unsplash.com" },
+            { id: 4, name: "Garrafa Térmica Inox", price: 65.00, img: "https://unsplash.com" }
+        ];
+
+        let cart = [];
+
+        // Renderiza os produtos na tela
+        function renderProducts() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <img src="${p.img}" alt="${p.name}">
+                    <h3>${p.name}</h3>
+                    <p class="price">R$ ${p.price.toFixed(2).replace('.', ',')}</p>
+                    <button class="add-btn" onclick="addToCart(${p.id})">Adicionar ao Carrinho</button>
+                </div>
+            `).join('');
+        }
+
+        // Adiciona item ao carrinho
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push(product);
+            updateCartUI();
+        }
+
+        // Remove item do carrinho
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        // Atualiza números e lista do carrinho
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const cartItems = document.getElementById('cart-items');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = "<p>Seu carrinho está vazio.</p>";
+            } else {
+                cartItems.innerHTML = cart.map((item, index) => `
+                    <div class="cart-item">
+                        <span>${item.name} - R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+                        <button class="remove-btn" onclick="removeFromCart(${index})">Remover</button>
+                    </div>
+                `).join('');
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('cart-total').innerText = total.toFixed(2).replace('.', ',');
+        }
+
+        // Abre/Fecha modal do carrinho
+        function toggleCart() {
+            const modal = document.getElementById('cart-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+            updateCartUI();
+        }
+
+        // Envia pedido para o WhatsApp
+        function checkoutWhatsApp() {
+            if (cart.length === 0) return alert("Adicione produtos ao carrinho primeiro!");
+
+            let message = "Olá! Gostaria de fazer o seguinte pedido:\n\n";
+            cart.forEach(item => {
+                message += `- ${item.name}: R$ ${item.price.toFixed(2).replace('.', ',')}\n`;
+            });
+            
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            message += `\n*Total: R$ ${total.toFixed(2).replace('.', ',')}*`;
+
+            const url = `https://wa.me{WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // Inicializa a página
+        renderProducts();
+    </script>
+</body>
+</html>
